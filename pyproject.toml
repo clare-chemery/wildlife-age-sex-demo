@@ -1,7 +1,7 @@
 [project]
-name = "wildlife-demographics"
+name = "wildlife-age-sex"
 version = "0.1.0"
-description = "Add your description here"
+description = "Machine learning project to extract sex (male/female) and age (young/old) characteristics of certain species using camera trap images."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
