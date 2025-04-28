@@ -1,3 +1,2 @@
-from .input import load_data, load_model
+from .input import load, load_backbone_model
 from .output import save
-from .utils import get_io_args

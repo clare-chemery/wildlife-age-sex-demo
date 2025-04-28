@@ -16,16 +16,18 @@ dependencies = [
     "scikit-learn>=1.6.1",
     "scipy>=1.15.2",
     "tensorflow>=2.19.0",
+    "tomli>=2.2.1",
     "torch>=2.6.0",
     "torchvision>=0.21.0",
     "tqdm>=4.67.1",
 ]
 
 [tool.poe.tasks.configure-dirs]
-cmd = "mkdir -p $WORKING_DIR/logs $WORKING_DIR/results $WORKING_DIR/data $WORKING_DIR/models"
+cmd = "mkdir -p $WORKING_DIR/configs $WORKING_DIR/logs $WORKING_DIR/data $WORKING_DIR/models"
 args = [
     {name="WORKING_DIR", options=["-wd", "--working-dir"], default=".", help="Path to wd containing data and results directories. Uses cwd if no arg passed."},
 ]
+
 
 
 

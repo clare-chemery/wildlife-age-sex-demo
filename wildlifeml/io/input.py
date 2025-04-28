@@ -1,5 +1,6 @@
 import pandas as pd
 from pathlib import Path
+from typing import Union
 
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Lambda
@@ -32,6 +33,16 @@ AVAILABLE_MODELS = {
     },
 }
 
+def load(filepath: Path):
+    """
+    Load data from a parquet file or model from a keras file.
+    """
+    if filepath.suffix == ".parquet":
+        return pd.read_parquet(filepath)
+    elif filepath.suffix == ".keras":
+        return tf.keras.models.load_model(filepath)
+    else:
+        raise ValueError(f"File {filepath} is not a parquet file or keras file.")
 
 class ModelFactory:
     """Factory for creating Keras model objects."""
@@ -59,23 +70,25 @@ class ModelFactory:
 
         return model
 
-def load_data(filename: str, working_dir: str):
+def load_backbone_model(model: Union[str, Path], num_classes: int = 2) -> tf.keras.Model:
     """
-    Load data from a parquet file.
+    Load a backbone model from a string identifier or path.
+    
+    Args:
+        model: Either a model name from AVAILABLE_MODELS or a path to a .keras file
+        working_dir: Working directory for resolving relative paths (only needed for string model names)
+        num_classes: Number of output classes for the model
+    
+    Returns:
+        tf.keras.Model: The loaded model
     """
-    data_path = Path(working_dir) / "data" / Path(filename).with_suffix(".parquet")
-    return pd.read_parquet(data_path)
-
-
-def load_model(model: str, working_dir: str, num_classes: int = 2):
-    """
-    Load a model from a pickle file.
-    """
-    if model in AVAILABLE_MODELS.keys():
-        model = ModelFactory.load(model, num_classes=num_classes, weights='imagenet', include_top=False, pooling='avg')
+    if isinstance(model, str):
+        try:
+            return ModelFactory.load(model, num_classes=num_classes, weights='imagenet', include_top=False, pooling='avg')
+        except KeyError:
+            raise ValueError(f"Model {model} not found. Please specify a valid model name from {AVAILABLE_MODELS.keys()}.")
     else:
         try:
-            model = tf.keras.models.load_model(Path(working_dir) / "models" / f"{model}.keras")
+            return tf.keras.models.load_model(model)
         except FileNotFoundError:
-            raise ValueError(f"Model {model}.keras not found. Either specify a valid model name from {AVAILABLE_MODELS.keys()} or provide a path to a .keras file.")
-    return model
+            raise ValueError(f"Model {model}/model.keras not found. Please provide a path to a valid .keras file.")
