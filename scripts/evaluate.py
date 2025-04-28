@@ -1,27 +1,34 @@
 import logging
-from wildlifeml.io import get_io_args, load_data, save, load_model
-from wildlifeml.train import evaluate_model, get_eval_args
-from wildlifeml.utils import get_session_config
+from wildlifeml.io import save, load
+from wildlifeml.train import evaluate_model
+import argparse
+from datetime import datetime
+from pathlib import Path
+import tomli
 
-
-def main(model_filepath: str, test_filepath: str, eval_results_filepath: str):
+def main(working_dir: str, test_filepath: str, model_dir: str,  **kwargs):
     # Load data
-    test_data = load_data(filepath=test_filepath)
+    test_data = load(filepath=Path(working_dir) / Path(test_filepath))
 
     # Load model
-    model_specs, model = load_model(filepath=model_filepath)
+    model = load(filepath=Path(working_dir) / Path(model_dir) / "model.keras")
 
     # Evaluate model
     results = evaluate_model(model, test_data)
 
     # Save results
-    save(model_specs | results, filepath=eval_results_filepath)
+    timestamp = datetime.now().strftime('%Y%m%dT%H%M%S')
+    save(results, filepath=Path(working_dir) / Path(model_dir) / f"{timestamp}__eval_results.json")
 
 
 if __name__ == "__main__":
-    session_config = get_session_config()
-    logging.basicConfig(**session_config)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, default="configs/test__config.toml")
+    args = parser.parse_args()
 
-    io_args = get_io_args(session_config["working_dir"])
-    eval_args = get_eval_args()
-    main(**io_args, **eval_args)
+    with open(args.config, "rb") as f:
+        args = tomli.load(f)
+
+    logging.basicConfig(**args["io"]["logging"])
+
+    main(args["globals"]["working_dir"], **args["io"]["data"], **args["evaluate"])

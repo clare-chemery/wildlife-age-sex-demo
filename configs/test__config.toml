@@ -1,0 +1,48 @@
+# This TOML file specifies the config for running the learning pipeline with test data.
+# It contains all the necessary params and can be used as a template for your local IO config.
+# Be careful to retain all original variable names and heading structure as outlined here.
+
+# To learn more about TOML syntax, see https://toml.io/en/.
+
+[globals]
+# Absolute path or relative path from the wd in which you execute the pipeline
+# All other paths are relative to this working directory
+working_dir = "." 
+
+[io]
+    ## Data paths (read and write) 
+    [[data]]
+
+    # Parquet file with image, label, and metadata columns
+    raw_data_filepath = "test_data/labeled_bbox_data.parquet"
+    # Location for results of `preprocess.py` to use in `train` and `evaluate` steps.
+    train_data_filepath = "data/train.parquet"
+    test_data_filepath = "data/test.parquet"
+
+    ## Model and results paths (read and write)
+    [[model]]
+
+    # Name of a pretrained keras model (or path to pretrained *.keras model) 
+    # Or one of ["resnet50", "inception_resnet_v2", "vgg19", "xception", "densenet121", "densenet201"]
+    backbone_model = "resnet150" 
+    # Directory to use for trained model (both training specs and model file)
+    model_dir = "models/test_model"
+
+    # Logging configuration (write)
+    [[logging]]
+
+    # directory to use for log files. To stream logs to console, comment out or delete this param.
+    log_dir = "logs"
+    # One of ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    log_level = "INFO" 
+
+[preprocess]
+
+# Columns from your raw data file on which to stratify sampling
+# To do a train-test split without stratification, delete or comment out this param.
+stratify_by = ["location", "season"] 
+
+
+[train]
+
+[evaluate]
