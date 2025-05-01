@@ -6,7 +6,8 @@ from datetime import datetime
 from pathlib import Path
 import tomli
 
-def main(working_dir: str, test_filepath: str, model_dir: str,  **kwargs):
+
+def main(working_dir: str, test_filepath: str, model_dir: str, **kwargs):
     # Load data
     test_data = load(filepath=Path(working_dir) / Path(test_filepath))
 
@@ -17,8 +18,13 @@ def main(working_dir: str, test_filepath: str, model_dir: str,  **kwargs):
     results = evaluate_model(model, test_data)
 
     # Save results
-    timestamp = datetime.now().strftime('%Y%m%dT%H%M%S')
-    save(results, filepath=Path(working_dir) / Path(model_dir) / f"{timestamp}__eval_results.json")
+    timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+    save(
+        results,
+        filepath=Path(working_dir)
+        / Path(model_dir)
+        / f"{timestamp}__eval_results.json",
+    )
 
 
 if __name__ == "__main__":

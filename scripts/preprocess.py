@@ -6,13 +6,14 @@ from wildlifeml.io import load, save
 from wildlifeml.preprocess import preprocess_data, split_data
 from pathlib import Path
 
+
 def main(
     working_dir: str,
     raw_data_filepath: str,
     train_data_filepath: str,
     test_data_filepath: str,
     stratify_by: Optional[list[str]] = None,
-    **kwargs
+    **kwargs,
 ):
     # Load data
     data = load(filepath=Path(working_dir) / Path(raw_data_filepath))
