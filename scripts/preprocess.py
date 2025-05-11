@@ -37,10 +37,11 @@ if __name__ == "__main__":
 
     with open(args.config, "rb") as f:
         args = tomli.load(f)
+    print(args)
     logging.basicConfig(**args.get("logging", {}))
 
     main(
         args["globals"]["working_dir"],
         **args["io"]["data"],
-        **args.get("preprocess", {}),
+        preprocess_kwargs=args.get("preprocess", {}),
     )
