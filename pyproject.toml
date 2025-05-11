@@ -13,6 +13,7 @@ dependencies = [
     "pandas>=2.2.3",
     "pillow>=11.2.1",
     "poethepoet>=0.34.0",
+    "pre-commit>=4.2.0",
     "pyarrow>=20.0.0",
     "ruff>=0.11.6",
     "scikit-learn>=1.6.1",
