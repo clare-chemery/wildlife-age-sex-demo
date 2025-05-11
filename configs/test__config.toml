@@ -11,7 +11,7 @@ working_dir = "."
 
 [io]
     ## Data paths (read and write) 
-    [[data]]
+    [[data]] #REQUIRED
 
     # Parquet file with image, label, and metadata columns
     raw_data_filepath = "test_data/labeled_bbox_data.parquet"
@@ -20,7 +20,7 @@ working_dir = "."
     test_data_filepath = "data/test.parquet"
 
     ## Model and results paths (read and write)
-    [[model]]
+    [[model]] #REQUIRED
 
     # Name of a pretrained keras model (or path to pretrained *.keras model) 
     # Or one of ["resnet50", "inception_resnet_v2", "vgg19", "xception", "densenet121", "densenet201"]
@@ -29,18 +29,21 @@ working_dir = "."
     model_dir = "models/test_model"
 
     # Logging configuration (write)
-    [[logging]]
+    [[logging]] #OPTIONAL
 
     # directory to use for log files. To stream logs to console, comment out or delete this param.
     log_dir = "logs"
     # One of ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     log_level = "INFO" 
 
-[preprocess]
+[preprocess] #OPTIONAL
+
+confidence_threshold = 0.96
+cropping_mode = "shift" 
 
 # Columns from your raw data file on which to stratify sampling
 # To do a train-test split without stratification, delete or comment out this param.
-stratify_by = ["location", "season"] 
+stratify_by = ["age", "sex"]
 
 
 [train]

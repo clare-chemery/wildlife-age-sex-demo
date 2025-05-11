@@ -12,20 +12,21 @@ def main(
     raw_data_filepath: str,
     train_data_filepath: str,
     test_data_filepath: str,
-    stratify_by: Optional[list[str]] = None,
+    preprocess_kwargs: dict,
     **kwargs,
 ):
     # Load data
     data = load(filepath=Path(working_dir) / Path(raw_data_filepath))
 
     # Preprocess data
-    preprocessed_data = preprocess_data(data)
+    preprocessed_data = preprocess_data(data, **preprocess_kwargs)
 
-    # Split data
-    train_data, test_data = split_data(preprocessed_data, stratify_by=stratify_by)
-
-    save(train_data, filepath=Path(working_dir) / Path(train_data_filepath))
-    save(test_data, filepath=Path(working_dir) / Path(test_data_filepath))
+    # Split data, save to disk
+    for train, test in split_data(
+        preprocessed_data, stratify_by=preprocess_kwargs.get("stratify_by", None)
+    ):
+        save(train, filepath=Path(working_dir) / Path(train_data_filepath))
+        save(test, filepath=Path(working_dir) / Path(test_data_filepath))
 
 
 if __name__ == "__main__":
@@ -35,6 +36,10 @@ if __name__ == "__main__":
 
     with open(args.config, "rb") as f:
         args = tomli.load(f)
-    logging.basicConfig(**args["logging"])
+    logging.basicConfig(**args.get("logging", {}))
 
-    main(args["globals"]["working_dir"], **args["io"]["data"], **args["preprocess"])
+    main(
+        args["globals"]["working_dir"],
+        **args["io"]["data"],
+        **args.get("preprocess", {}),
+    )

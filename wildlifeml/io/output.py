@@ -2,13 +2,18 @@ import pandas as pd
 from typing import Union
 import tensorflow as tf
 from pathlib import Path
+from PIL import Image
 
 
-def save(content: Union[dict, str, pd.DataFrame], filepath: Path):
+def save(content: Union[dict, str, pd.DataFrame], filepath: str | Path):
     """
     Save content to a file.
     """
+    if isinstance(filepath, str):
+        filepath = Path(filepath)
     if isinstance(content, pd.DataFrame):
+        if "image" in content.columns:
+            content = postprocess_image_data(content, filepath)
         content.to_parquet(filepath)
     elif isinstance(content, tf.keras.Model):
         content.save(filepath)
@@ -20,5 +25,50 @@ def save(content: Union[dict, str, pd.DataFrame], filepath: Path):
             f.write(content)
 
 
-def format_dict_for_text(model_specs: dict) -> str:
-    pass
+def postprocess_image_data(data: pd.DataFrame, filepath: Path) -> pd.DataFrame:
+    """
+    Postprocess the image data in the DataFrame by saving the images to the same directory as the parquet file.
+    Requires the 'image' and 'image_id' columns to be present in the DataFrame.
+
+    Args:
+    -----
+    data: pd.DataFrame
+        The DataFrame to postprocess.
+    filepath: Path
+        The path to the parquet file.
+
+    Returns:
+    --------
+    pd.DataFrame
+        The postprocessed DataFrame with 'image_path' column added and 'image' column dropped.
+    """
+    # Check if required columns are present
+    if "image" not in data.columns or "image_id" not in data.columns:
+        raise ValueError("DataFrame must contain 'image' and 'image_id' columns.")
+
+    # Check if image_id is unique
+    if not data.image_id.is_unique:
+        raise ValueError("'image_id' must be unique.")
+
+    # Create image directory with same name as parquet file
+    image_dir = filepath.parent / filepath.stem
+    image_dir.mkdir(exist_ok=True)
+
+    data.loc[:, "image_path"] = data.image_id.apply(
+        lambda id: str(image_dir / (id + ".jpg"))
+    )
+
+    for __, row in data.iterrows():
+        if row["image"] is not None:
+            im = Image.fromarray(row["image"])
+            im.save(row["image_path"])
+
+    data = data.drop(columns=["image"], axis=1)
+    return data
+
+
+def format_dict_for_text(dict_content: dict) -> str:
+    """
+    Format a dictionary for text output.
+    """
+    return "\n".join([f"{k}: {v}" for k, v in dict_content.items()])

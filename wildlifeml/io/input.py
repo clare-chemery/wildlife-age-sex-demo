@@ -1,6 +1,9 @@
 import pandas as pd
 from pathlib import Path
 from typing import Literal
+import logging
+from PIL import Image
+import numpy as np
 
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Lambda
@@ -34,16 +37,62 @@ AVAILABLE_MODELS = {
 }
 
 
-def load(filepath: Path):
+def load(filepath: str | Path, image_mode: Literal["RGB", "L"] = "RGB"):
     """
     Load data from a parquet file or model from a keras file.
+
+    NOTE: If the file is a parquet file, the 'image_path' column is used to load the image.
+    The 'image_path' column is created from the 'image_id' column by the save function when saving a DataFrame with an 'image' column.
+
+    Args:
+    -----
+    filepath: Path
+        The path to the file to load.
+    image_mode: Literal['RGB', 'L']
+        The mode to convert the image to. 'RGB' for color, 'L' for grayscale.
+        Only used if the file is a parquet file and contains an 'image_path' column.
+
+    Returns:
+    --------
+    pd.DataFrame or tf.keras.Model
+        The loaded data or model.
     """
+    if isinstance(filepath, str):
+        filepath = Path(filepath)
     if filepath.suffix == ".parquet":
-        return pd.read_parquet(filepath)
+        data = pd.read_parquet(filepath)
+        if "image_path" in data.columns:
+            data["image"] = data["image_path"].apply(
+                lambda x: try_load_image(x, image_mode)
+            )
+        return data
     elif filepath.suffix == ".keras":
         return tf.keras.models.load_model(filepath)
     else:
         raise ValueError(f"File {filepath} is not a parquet file or keras file.")
+
+
+def try_load_image(image_path: str | Path, mode: Literal["RGB", "L"]) -> np.ndarray:
+    """Load an image from a path.
+
+    Args:
+    -----
+    image_path: str | Path
+        The path to the image.
+    mode: Literal['RGB', 'L']
+        The mode to convert the image to. 'RGB' for color, 'L' for grayscale.
+
+    Returns:
+    --------
+    np.ndarray or None if file not found
+    """
+    try:
+        img = Image.open(image_path)
+        img.load()
+        return np.array(img.convert(mode))
+    except FileNotFoundError:
+        logging.warning(f"File not found: {image_path}")
+        return None
 
 
 class ModelFactory:
@@ -80,9 +129,7 @@ class ModelFactory:
         return model
 
 
-def load_backbone_model(
-    model: str | Path, num_classes: int = 2
-) -> tf.keras.Model:
+def load_backbone_model(model: str | Path, num_classes: int = 2) -> tf.keras.Model:
     """
     Load a backbone model from a string identifier or path.
 
