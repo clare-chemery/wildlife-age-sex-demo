@@ -1,7 +1,7 @@
-import logging
 import argparse
-from typing import Literal
+import logging
 from datetime import datetime
+from typing import Literal
 
 
 def get_session_config():
@@ -20,7 +20,10 @@ def get_session_config():
         "--use-log-file",
         type=bool,
         default=True,
-        help="Whether to use a log file. If True, a log file will be created in the working directory.",
+        help="""
+        Whether to use a log file. If True, a log file will be created in the working directory.
+        If False, logs will be printed to the console.
+        """,
     )
     args = parser.parse_args()
 

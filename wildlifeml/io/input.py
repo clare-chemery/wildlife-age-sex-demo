@@ -1,11 +1,11 @@
-import pandas as pd
+import logging
 from pathlib import Path
 from typing import Literal
-import logging
-from PIL import Image
-import numpy as np
 
+import numpy as np
+import pandas as pd
 import tensorflow as tf
+from PIL import Image
 from tensorflow.keras.layers import Dense, Lambda
 from tensorflow.keras.models import Sequential
 
@@ -42,7 +42,8 @@ def load(filepath: str | Path, image_mode: Literal["RGB", "L"] = "RGB"):
     Load data from a parquet file or model from a keras file.
 
     NOTE: If the file is a parquet file, the 'image_path' column is used to load the image.
-    The 'image_path' column is created from the 'image_id' column by the save function when saving a DataFrame with an 'image' column.
+    The 'image_path' column is created from the 'image_id' column by the save function when
+    saving a DataFrame with an 'image' column.
 
     Args:
     -----
@@ -62,9 +63,7 @@ def load(filepath: str | Path, image_mode: Literal["RGB", "L"] = "RGB"):
     if filepath.suffix == ".parquet":
         data = pd.read_parquet(filepath)
         if "image_path" in data.columns:
-            data["image"] = data["image_path"].apply(
-                lambda x: try_load_image(x, image_mode)
-            )
+            data["image"] = data["image_path"].apply(lambda x: try_load_image(x, image_mode))
         return data
     elif filepath.suffix == ".keras":
         return tf.keras.models.load_model(filepath)
@@ -134,12 +133,16 @@ def load_backbone_model(model: str | Path, num_classes: int = 2) -> tf.keras.Mod
     Load a backbone model from a string identifier or path.
 
     Args:
-        model: Either a model name from AVAILABLE_MODELS or path to a model file
-        working_dir: Working directory for resolving relative paths (only needed for string model names)
-        num_classes: Number of output classes for the model
+    -----
+    model: str | Path
+        Either a model name from AVAILABLE_MODELS or path to a model file
+    num_classes: int
+        Number of output classes for the model
 
     Returns:
-        tf.keras.Model: The loaded model
+    --------
+    tf.keras.Model
+        The loaded model
     """
     if model in AVAILABLE_MODELS.keys():
         return ModelFactory.load(
@@ -152,7 +155,10 @@ def load_backbone_model(model: str | Path, num_classes: int = 2) -> tf.keras.Mod
     else:
         try:
             return tf.keras.models.load_model(model)
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             raise ValueError(
-                f"Model not found. Please specify a valid model name from {AVAILABLE_MODELS.keys()} or provide a path to a valid model file [extensions]."
-            )
+                f"""
+                Model not found. Please specify a valid model name from {AVAILABLE_MODELS.keys()}
+                or provide a path to a valid model file [#TODO: add valid extensions].
+                """
+            ) from e

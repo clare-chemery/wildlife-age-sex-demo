@@ -1,10 +1,11 @@
-import logging
 import argparse
-from typing import Optional
+import logging
+from pathlib import Path
+
 import tomli
+
 from wildlifeml.io import load, save
 from wildlifeml.preprocess import preprocess_data, split_data
-from pathlib import Path
 
 
 def main(

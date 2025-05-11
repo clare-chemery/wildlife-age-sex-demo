@@ -1,11 +1,11 @@
-import pandas as pd
-from typing import Union
-import tensorflow as tf
 from pathlib import Path
+
+import pandas as pd
+import tensorflow as tf
 from PIL import Image
 
 
-def save(content: Union[dict, str, pd.DataFrame], filepath: str | Path):
+def save(content: dict | str | pd.DataFrame, filepath: str | Path):
     """
     Save content to a file.
     """
@@ -18,17 +18,15 @@ def save(content: Union[dict, str, pd.DataFrame], filepath: str | Path):
     elif isinstance(content, tf.keras.Model):
         content.save(filepath)
     else:
-        content = (
-            format_dict_for_text(content) if isinstance(content, dict) else content
-        )
+        content = format_dict_for_text(content) if isinstance(content, dict) else content
         with open(filepath, "w") as f:
             f.write(content)
 
 
 def postprocess_image_data(data: pd.DataFrame, filepath: Path) -> pd.DataFrame:
     """
-    Postprocess the image data in the DataFrame by saving the images to the same directory as the parquet file.
-    Requires the 'image' and 'image_id' columns to be present in the DataFrame.
+    Postprocess the image data in the DataFrame by saving the images to the same directory
+    as the parquet file. Requires the 'image' and 'image_id' columns.
 
     Args:
     -----
@@ -54,9 +52,7 @@ def postprocess_image_data(data: pd.DataFrame, filepath: Path) -> pd.DataFrame:
     image_dir = filepath.parent / filepath.stem
     image_dir.mkdir(exist_ok=True)
 
-    data.loc[:, "image_path"] = data.image_id.apply(
-        lambda id: str(image_dir / (id + ".jpg"))
-    )
+    data.loc[:, "image_path"] = data.image_id.apply(lambda id: str(image_dir / (id + ".jpg")))
 
     for __, row in data.iterrows():
         if row["image"] is not None:

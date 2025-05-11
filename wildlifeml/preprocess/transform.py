@@ -1,6 +1,7 @@
-import pandas as pd
-import numpy as np
 from typing import Literal
+
+import numpy as np
+import pandas as pd
 
 
 def preprocess_data(
@@ -27,11 +28,13 @@ def preprocess_data(
 
     confidence_threshold: float
         The confidence threshold to use for the bounding box.
-        If a bounding box has a confidence score below this threshold, it is excluded from the dataset.
+        If a bounding box has a confidence score below this threshold, it is excluded from the
+        dataset.
 
     croppping_mode: str
         If "pad", crop the image to a square and pad.
-        If "shift", square and try to shift the cropping box to fit within the image bounds. Otherwise, pad.
+        If "shift", square and try to shift the cropping box to fit within the image bounds.
+            Otherwise, pad.
         If None, return the uncropped image.
 
     Yields:
@@ -39,9 +42,7 @@ def preprocess_data(
     tuple(pd.DataFrame, pd.DataFrame)
         A tuple of dataframes, train and test.
     """
-    preprocessed_data = data[data["conf"] >= confidence_threshold].drop(
-        columns=["conf"]
-    )
+    preprocessed_data = data[data["conf"] >= confidence_threshold].drop(columns=["conf"])
 
     if cropping_mode == "shift":
         preprocessed_data["image"] = preprocessed_data.apply(
@@ -66,8 +67,8 @@ def crop_image(
     cropping_mode: Literal["shift", "pad", None] = "shift",
 ) -> np.ndarray:
     """
-    Load and crop an image based on the bounding box coordinates.
-    Results in a square image that contains the full bounding box, padded with zeros where it exceeds the image bounds.
+    Load and crop an image based on the bounding box coordinates. Results in a square image that
+    contains the full bounding box, padded with zeros where it exceeds the image bounds.
 
     Args:
     -----
@@ -86,9 +87,7 @@ def crop_image(
     elif cropping_mode == "pad":
         cropped_image = _crop_and_pad_image(full_image, x_coords, y_coords)
     else:
-        raise ValueError(
-            f"Invalid cropping mode: {cropping_mode}. Use 'shift' or 'pad'."
-        )
+        raise ValueError(f"Invalid cropping mode: {cropping_mode}. Use 'shift' or 'pad'.")
     return cropped_image
 
 
@@ -149,9 +148,7 @@ def _crop_and_pad_image(
 
     # Validate crop size
     if crop_size <= 0:
-        raise ValueError(
-            f"Invalid crop size: {crop_size}. Check bounding box coordinates."
-        )
+        raise ValueError(f"Invalid crop size: {crop_size}. Check bounding box coordinates.")
 
     # Create a zero-padded array of the desired size
     if len(image.shape) == 3:  # RBG image
@@ -209,9 +206,7 @@ def _crop_image(
 
     # Validate crop size
     if crop_size <= 0:
-        raise ValueError(
-            f"Invalid crop size: {crop_size}. Check bounding box coordinates."
-        )
+        raise ValueError(f"Invalid crop size: {crop_size}. Check bounding box coordinates.")
 
     # Calculate approx. center of bounding box
     center_x = (x_min + x_max) // 2

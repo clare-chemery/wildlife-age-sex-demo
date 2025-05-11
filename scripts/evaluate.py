@@ -1,10 +1,12 @@
-import logging
-from wildlifeml.io import save, load
-from wildlifeml.train import evaluate_model
 import argparse
+import logging
 from datetime import datetime
 from pathlib import Path
+
 import tomli
+
+from wildlifeml.io import load, save
+from wildlifeml.train import evaluate_model
 
 
 def main(working_dir: str, test_filepath: str, model_dir: str, **kwargs):
@@ -21,9 +23,7 @@ def main(working_dir: str, test_filepath: str, model_dir: str, **kwargs):
     timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
     save(
         results,
-        filepath=Path(working_dir)
-        / Path(model_dir)
-        / f"{timestamp}__eval_results.json",
+        filepath=Path(working_dir) / Path(model_dir) / f"{timestamp}__eval_results.json",
     )
 
 

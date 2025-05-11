@@ -1,9 +1,11 @@
-import logging
-from wildlifeml.io import load, save, load_backbone_model
-from wildlifeml.train import tune_model
 import argparse
-import tomli
+import logging
 from pathlib import Path
+
+import tomli
+
+from wildlifeml.io import load, load_backbone_model, save
+from wildlifeml.train import tune_model
 
 
 def main(
@@ -18,15 +20,11 @@ def main(
     train_data = load(filepath=Path(working_dir) / Path(train_filepath))
 
     # Train model
-    model = load_backbone_model(
-        backbone_model, num_classes=training_args.get("num_classes", 2)
-    )
+    model = load_backbone_model(backbone_model, num_classes=training_args.get("num_classes", 2))
     tuned_model, tuning_specs = tune_model(model, train_data, **training_args)
 
     # Save model
-    save(
-        tuning_specs, filepath=Path(working_dir) / Path(model_dir) / "tuning_specs.toml"
-    )
+    save(tuning_specs, filepath=Path(working_dir) / Path(model_dir) / "tuning_specs.toml")
     save(tuned_model, filepath=Path(working_dir) / Path(model_dir) / "model.keras")
 
 

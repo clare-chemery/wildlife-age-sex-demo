@@ -1,13 +1,13 @@
-from typing import Optional
+import logging
+
+import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit
-import numpy as np
-import logging
 
 
 def split_data(
     data: pd.DataFrame,
-    stratify_by: str = None,
+    stratify_by: str | None = None,
     train_prop: float = 0.8,
     num_splits: int = 1,
 ):
@@ -33,15 +33,13 @@ def split_data(
 
     # Validate stratify_by
     if stratify_by:
-        if not stratify_by in data.columns:
+        if stratify_by not in data.columns:
             raise ValueError("stratify_by must be a column in the data.")
 
     # Stratify by specified column or do not stratify
     groups_to_stratify_by = data[stratify_by] if stratify_by else np.ones(len(data))
 
-    sss = StratifiedShuffleSplit(
-        n_splits=num_splits, train_size=train_prop
-    )
+    sss = StratifiedShuffleSplit(n_splits=num_splits, train_size=train_prop)
     try:
         splits = sss.split(data, groups_to_stratify_by)
     except ValueError as e:

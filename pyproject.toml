@@ -24,6 +24,17 @@ dependencies = [
     "tqdm>=4.67.1",
 ]
 
+[tool.ruff]
+line-length = 99
+target-version = "py310"
+lint.select = ["E", "F", "I", "N", "W", "B", "UP", "PL", "RUF"]
+lint.ignore = ["PLR2004"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
 [tool.poe.tasks.configure-dirs]
 cmd = "mkdir -p $WORKING_DIR/configs $WORKING_DIR/logs $WORKING_DIR/data $WORKING_DIR/models"
 args = [

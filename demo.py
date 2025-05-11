@@ -1,10 +1,11 @@
 """Demo script for the wildlifeml package."""
 
-import wildlifeml
-import pandas as pd
-import numpy as np
-from PIL import Image
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+import wildlifeml
 
 df = pd.read_json("test_data/data__red_deer_cropped/md_unlabeled.json").T
 df.loc[:, "image_path"] = df.apply(
