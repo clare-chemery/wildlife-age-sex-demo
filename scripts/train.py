@@ -11,8 +11,9 @@ from wildlifeml.train import tune_model
 def main(
     working_dir: str,
     train_filepath: str,
-    backbone_model: str,
     model_dir: str,
+    target_column: str,
+    classes: list[str],
     training_args: dict,
     **kwargs,
 ):
@@ -20,11 +21,13 @@ def main(
     train_data = load(filepath=Path(working_dir) / Path(train_filepath))
 
     # Train model
-    model = load_backbone_model(backbone_model, num_classes=training_args.get("num_classes", 2))
-    tuned_model, tuning_specs = tune_model(model, train_data, **training_args)
+    model = load_backbone_model(**training_args, num_classes=len(classes), mode="keras")
+    tuned_model, tuning_specs = tune_model(
+        model, train_data, target_column, classes, **training_args
+    )
 
     # Save model
-    save(tuning_specs, filepath=Path(working_dir) / Path(model_dir) / "tuning_specs.toml")
+    save(tuning_specs, filepath=Path(working_dir) / Path(model_dir) / "tuning_specs.json")
     save(tuned_model, filepath=Path(working_dir) / Path(model_dir) / "model.keras")
 
 
@@ -35,10 +38,10 @@ if __name__ == "__main__":
 
     with open(args.config, "rb") as f:
         args = tomli.load(f)
-    logging.basicConfig(**args["logging"])
+    logging.basicConfig(**args.get("logging", {}))
 
     main(
-        args["globals"]["working_dir"],
+        **args["globals"],
         **args["io"]["data"],
         **args["io"]["model"],
         training_args=args["train"],

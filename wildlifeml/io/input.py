@@ -9,8 +9,8 @@ from PIL import Image
 from tensorflow.keras.layers import Dense, Lambda
 from tensorflow.keras.models import Sequential
 
-AVAILABLE_MODELS = {
-    "resnet50": {
+KERAS_AVAILABLE_MODELS = {
+    "resnet50v2": {
         "model": tf.keras.applications.ResNet50V2,
         "preproc_func": tf.keras.applications.resnet_v2.preprocess_input,
     },
@@ -117,7 +117,7 @@ class ModelFactory:
 
         Note: The model still needs to be compiled.
         """
-        model_entry = AVAILABLE_MODELS[model_id]
+        model_entry = KERAS_AVAILABLE_MODELS[model_id]
         model_cls = model_entry["model"]
 
         model = Sequential()
@@ -125,17 +125,22 @@ class ModelFactory:
         model.add(model_cls(weights=weights, include_top=include_top, pooling=pooling))
         model.add(Dense(num_classes, activation="softmax"))
 
+        # Freeze all layers from backbone model
+        for layer in model.get_layer(model_id).layers:
+            layer.trainable = False
+
         return model
 
 
-def load_backbone_model(model: str | Path, num_classes: int = 2) -> tf.keras.Model:
+def load_backbone_model(backbone_model: str | Path, num_classes: int = 2, **kwargs) -> Sequential:
     """
-    Load a backbone model from a string identifier or path.
+    Load a backbone model from a string identifier or path. By default, all but the final
+    layer are frozen.
 
     Args:
     -----
     model: str | Path
-        Either a model name from AVAILABLE_MODELS or path to a model file
+        Either a model name from KERAS_AVAILABLE_MODELS or path to a model file
     num_classes: int
         Number of output classes for the model
 
@@ -144,9 +149,9 @@ def load_backbone_model(model: str | Path, num_classes: int = 2) -> tf.keras.Mod
     tf.keras.Model
         The loaded model
     """
-    if model in AVAILABLE_MODELS.keys():
+    if backbone_model in KERAS_AVAILABLE_MODELS.keys():
         return ModelFactory.load(
-            model,
+            backbone_model,
             num_classes=num_classes,
             weights="imagenet",
             include_top=False,
@@ -154,11 +159,22 @@ def load_backbone_model(model: str | Path, num_classes: int = 2) -> tf.keras.Mod
         )
     else:
         try:
-            return tf.keras.models.load_model(model)
+            backbone_model = tf.keras.models.load_model(backbone_model)
+            # Check if the model has the right output layer
+            if not backbone_model.layers[-1].output_shape[1] == num_classes:
+                # add dense layer with softmax
+                logging.info(
+                    f"Adding dense layer with {num_classes} classes to the backbonemodel."
+                )
+                backbone_model.add(Dense(num_classes, activation="softmax"))
+            # Freeze all but the last layer
+            for layer in backbone_model.layers[:-1]:
+                layer.trainable = False
+            return backbone_model
         except FileNotFoundError as e:
             raise ValueError(
                 f"""
-                Model not found. Please specify a valid model name from {AVAILABLE_MODELS.keys()}
+                Model not found. Please specify a valid model name from {KERAS_AVAILABLE_MODELS.keys()}
                 or provide a path to a valid model file [#TODO: add valid extensions].
                 """
             ) from e
