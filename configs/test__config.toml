@@ -20,8 +20,8 @@ classes = ["male", "female", "unknown"]
     # Parquet file with image, label, and metadata columns
     raw_data_filepath = "test_data/labeled_bbox_data.parquet"
     # Location for results of `preprocess.py` to use in `train` and `evaluate` steps.
-    train_filepath = "data/train.parquet"
-    test_filepath = "data/test.parquet"
+    train_filepath = "data/test/train.parquet"
+    test_filepath = "data/test/test.parquet"
 
     ## Model and results paths (read and write)
     [io.model] #REQUIRED
