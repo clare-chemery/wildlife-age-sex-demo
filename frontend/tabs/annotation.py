@@ -48,23 +48,29 @@ def render_annotation_page():
 def render_config_picker():
     image_dir = st.selectbox("Select image directory", get_image_dirs())
 
+    st.info("Class names must be unique. Class labels must be a comma separated list.")
     class_df = st.data_editor(
         pd.DataFrame({"class_name": ["ex_class"], "class_labels": ["label_1, label_2"]}),
         use_container_width=True,
         num_rows="dynamic",
     )
-    class_df["class_labels"] = class_df["class_labels"].str.split(",")
-    class_df["class_labels"] = class_df["class_labels"].apply(
-        lambda x: [label.strip() for label in x]
-    )
 
     if st.button("Continue to annotation", key="config_submit"):
+        if class_df.class_name.duplicated().any():
+            st.error("Class names must be unique.")
+            return
+
+        # post process class_df
+        class_df["class_labels"] = class_df["class_labels"].str.split(",")
+        class_df["class_labels"] = class_df["class_labels"].apply(
+            lambda x: [label.strip() for label in x]
+        )
+
         # Store config in session_state before rerun
         st.session_state.class_df = class_df
         st.session_state.image_dir = image_dir
-        st.session_state.annotations_path = (
-            annotations_path := Path("data") / image_dir / "annotations.csv"
-        )
+        annotations_path = Path("data") / image_dir / "annotations.csv"
+        st.session_state.annotations_path = annotations_path
         if os.path.exists(annotations_path):
             confirm_overwrite(annotations_path)
         else:
@@ -182,7 +188,6 @@ def render_bbox_image(bbox: dict):
     if os.path.exists(bbox["image_path"]):
         image = Image.open(bbox["image_path"]).convert("RGB")
         draw = ImageDraw.Draw(image)
-        # bbox format: [x_start, y_start, x_end, y_end] normalized (0-1)
         if bbox["bbox"]:
             w, h = image.size
             # Unpack coordinates assuming format is [x_min, y_min, width, height]
