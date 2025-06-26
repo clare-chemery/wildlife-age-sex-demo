@@ -180,6 +180,8 @@ cython_debug/
 *.h5
 *.ckpt
 *.keras
+*.pt
+*.pth
 # NOTE: do not use the depreciated SavedModel format
 # (https://www.tensorflow.org/tutorials/keras/save_and_load#savedmodel_format)
 
@@ -187,4 +189,6 @@ cython_debug/
 data/*
 !data/test/
 *.parquet
-*.keras
+# keep error tables from evaluation
+!models/**/*.parquet
+

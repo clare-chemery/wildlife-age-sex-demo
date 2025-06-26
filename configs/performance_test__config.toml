@@ -20,14 +20,14 @@ classes = ["male", "female", "unknown"]
     # Parquet file with image, label, and metadata columns
     raw_data_filepath = "data/preprocessed/clean_labeled_bbox_data.parquet"
     # Location for results of `preprocess.py` to use in `train` and `evaluate` steps.
-    train_filepath = "data/baseline/train.parquet"
-    test_filepath = "data/baseline/test.parquet"
+    train_filepath = "data/performance_test/train.parquet"
+    test_filepath = "data/performance_test/test.parquet"
 
     ## Model and results paths (read and write)
     [io.model] #REQUIRED
 
     # Directory to use for trained model (both training specs and model file)
-    model_dir = "models/baseline_model"
+    model_dir = "models/performance_test"
 
     # Logging configuration (write)
     [io.logging] #OPTIONAL
@@ -51,9 +51,10 @@ stratify_by = "sex"
 
 # Name of a pretrained PyTorch model (or path to pretrained *.pt/*.pth model) 
 # Or one of ["resnet50", "inception_v3", "vgg19", "densenet161", "densenet201"]
-backbone_model = "resnet50" 
+backbone_model = "densenet201"
 
 batch_size = 32
+finetune_layers = 5
 
 [evaluate] #OPTIONAL
 
