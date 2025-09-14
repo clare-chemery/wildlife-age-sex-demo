@@ -8,7 +8,7 @@ import logging
 
 def preprocess_data(
     data: pd.DataFrame,
-    confidence_threshold: float = 0.95,
+    confidence_threshold: float = 0.96,
     cropping_mode: Literal["pad", "shift", None] = "shift",
     rescale_to: tuple[int, int] | None = (224, 224),
     **kwargs,
