@@ -41,6 +41,7 @@ classes = ["yearling", "juvenile", "adult", "unknown"]
 [preprocess] #OPTIONAL
 
 confidence_threshold = 0.96
+
 cropping_mode = "shift" 
 rescale_to = [224, 224]
 
@@ -54,6 +55,13 @@ stratify_by = "age"
 # Or one of ["resnet50", "vgg19", "densenet161", "densenet201"]
 backbone_model = "resnet50"
 
+# Augmentation configuration
+# Options: "light", "medium", "strong"
+augmentation_strength = "medium"
+
+# Enable quality-simulating augmentations (blur, noise, compression artifacts)
+enable_quality_simulation = true
+
 batch_size = 16
 transfer_epochs = 30
 transfer_learning_rate = 0.005
@@ -66,5 +74,5 @@ finetune_epochs = 50
 
 # Provide stratified evaluation on specified colunm, only supports stratification on one column
 stratify_by = "is_summer"
-confidence_threshold = 0.85
+confidence_threshold = 0.75
 exclude_uncertain = true

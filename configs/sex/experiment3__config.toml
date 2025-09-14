@@ -41,6 +41,7 @@ classes = ["male", "female", "unknown"]
 [preprocess] #OPTIONAL
 
 confidence_threshold = 0.96
+
 cropping_mode = "shift" 
 rescale_to = [224, 224]
 
@@ -54,6 +55,13 @@ stratify_by = "sex"
 # Or one of ["resnet50", "vgg19", "densenet161", "densenet201"]
 backbone_model = "densenet161"
 
+# Augmentation configuration
+# Options: "light", "medium", "strong"
+augmentation_strength = "strong"
+
+# Enable quality-simulating augmentations (blur, noise, compression artifacts)
+enable_quality_simulation = true
+
 batch_size = 32
 
 finetune_layers = 5
@@ -64,5 +72,5 @@ finetune_epochs = 30
 
 # Provide stratified evaluation on specified colunm, only supports stratification on one column
 stratify_by = "is_summer"
-confidence_threshold = 0.85
+confidence_threshold = 0.75
 exclude_uncertain = true
