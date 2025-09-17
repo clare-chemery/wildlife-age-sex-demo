@@ -327,17 +327,6 @@ uv run python -c "import torch; print(torch.cuda.is_available())"
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- **MegaDetector**: Microsoft AI for Earth's wildlife detection model
-- **PyTorch**: Deep learning framework
-- **Streamlit**: Web interface framework
-- **Camera trap data providers**: Wildlife researchers and conservation organizations
-
 ## 📞 Support
 
 For questions and support:
