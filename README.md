@@ -316,7 +316,7 @@ uv run python -c "import torch; print(torch.cuda.is_available())"
 ## 📚 Documentation
 
 - **[Complete Setup Tutorial](SETUP_TUTORIAL.md)**: Detailed step-by-step guide from installation to evaluation
-- **[Configuration Reference](configs/example_complete__config.toml)**: All available parameters
+- **[Configuration Reference](configs/example__config.toml)**: All available parameters
 - **[Demo Configuration](configs/demo__config.toml)**: Quick start example config
 
 ## 🤝 Contributing
