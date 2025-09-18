@@ -195,15 +195,28 @@ def render_image_slideshow(
             st.info(f"No {slideshow_title.lower()} found in any files.")
             return
 
-        # Combine all data and deduplicate by image_path
+        # Combine all data and deduplicate by filename (not full path)
         combined_data = pd.concat(all_image_data, ignore_index=True)
-        combined_data = combined_data.drop_duplicates(subset=["image_path"], keep="first")
+        # Extract filename from image_path for deduplication
+        combined_data["filename"] = combined_data["image_path"].apply(
+            lambda x: os.path.basename(x) if pd.notna(x) else ""
+        )
+        combined_data = combined_data.drop_duplicates(subset=["filename"], keep="first")
+        # Remove the temporary filename column
+        combined_data = combined_data.drop(columns=["filename"])
 
         if len(combined_data) == 0:
             st.info(f"No unique {slideshow_title.lower()} found after deduplication.")
             return
 
-        st.write(f"**Total unique {slideshow_title.lower()}:** {len(combined_data)}")
+        # Filter out rows with missing images to avoid errors during viewing
+        original_count = len(combined_data)
+        combined_data = combined_data[combined_data["image"].notna()].copy()
+        filtered_count = len(combined_data)
+
+        if filtered_count == 0:
+            st.info(f"No {slideshow_title.lower()} with valid images found.")
+            return
 
         target_column = get_target_column(experiment_dir)
 
@@ -211,54 +224,52 @@ def render_image_slideshow(
         if session_state_key not in st.session_state:
             st.session_state[session_state_key] = 0
 
+        # Ensure index is within bounds after filtering
+        if st.session_state[session_state_key] >= len(combined_data):
+            st.session_state[session_state_key] = 0
+
         # Progress indicator
         st.write(f"**Image {st.session_state[session_state_key] + 1} of {len(combined_data)}**")
         progress = (st.session_state[session_state_key] + 1) / len(combined_data)
         st.progress(progress)
 
-        # Display current image
+        # Display current image (all images are guaranteed to exist after filtering)
         current_row = combined_data.iloc[st.session_state[session_state_key]]
 
-        if current_row.get("image") is not None:
-            # Display image
-            st.image(
-                current_row["image"], caption=f"Image ID: {current_row['image_id']}", width=600
+        # Display image
+        st.image(current_row["image"], caption=f"Image ID: {current_row['image_id']}", width=600)
+        render_slide_controls(combined_data, session_state_key)
+
+        # Display metadata in columns
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.write(f"**True {target_column.title()}:** {current_row.get(target_column)}")
+            st.write(
+                f"**Predicted {target_column.title()}:** {current_row.get('predicted_label')}"
             )
-            render_slide_controls(combined_data, session_state_key)
+            if confidence_column and confidence_column in current_row:
+                st.write(f"**Confidence:** {current_row.get(confidence_column, 'N/A'):.3f}")
 
-            # Display metadata in columns
-            col1, col2 = st.columns(2)
-
-            with col1:
-                st.write(f"**True {target_column.title()}:** {current_row.get(target_column)}")
-                st.write(
-                    f"**Predicted {target_column.title()}:** {current_row.get('predicted_label')}"
+        with col2:
+            if "DateTime" in current_row:
+                date_str = (
+                    current_row["DateTime"].strftime("%Y-%m-%d")
+                    if pd.notna(current_row["DateTime"])
+                    else "N/A"
                 )
-                if confidence_column and confidence_column in current_row:
-                    st.write(f"**Confidence:** {current_row.get(confidence_column, 'N/A'):.3f}")
+                st.write(f"**Date:** {date_str}")
+            if "is_summer" in current_row:
+                season = "Summer" if current_row["is_summer"] else "Winter"
+                st.write(f"**Season:** {season}")
 
-            with col2:
-                if "DateTime" in current_row:
-                    date_str = (
-                        current_row["DateTime"].strftime("%Y-%m-%d")
-                        if pd.notna(current_row["DateTime"])
-                        else "N/A"
-                    )
-                    st.write(f"**Date:** {date_str}")
-                if "is_summer" in current_row:
-                    season = "Summer" if current_row["is_summer"] else "Winter"
-                    st.write(f"**Season:** {season}")
-
-                # Display additional metadata if provided
-                if additional_metadata:
-                    for metadata_col in additional_metadata:
-                        if metadata_col in current_row:
-                            st.write(
-                                f"**{metadata_col.replace('_', ' ').title()}:** {current_row[metadata_col]}"
-                            )
-
-        else:
-            st.error(f"Image not found for index {st.session_state[session_state_key]}")
+            # Display additional metadata if provided
+            if additional_metadata:
+                for metadata_col in additional_metadata:
+                    if metadata_col in current_row:
+                        st.write(
+                            f"**{metadata_col.replace('_', ' ').title()}:** {current_row[metadata_col]}"
+                        )
 
     except Exception as e:
         st.error(f"Error loading image data: {e}")

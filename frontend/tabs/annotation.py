@@ -302,7 +302,7 @@ def render_bbox_image(bbox: dict):
                 y_coords = (int(y_min * height), int(y_max * height))
             # use coordinates to draw rectangle
             box = [x_coords[0], y_coords[0], x_coords[1], y_coords[1]]
-            draw.rectangle(box, outline="red", width=3)
+            draw.rectangle(box, outline="yellow", width=4)
         st.image(image, caption=bbox["image_path"], use_container_width=True)
     else:
         st.error(f"Image not found: {bbox['image_path']}")
