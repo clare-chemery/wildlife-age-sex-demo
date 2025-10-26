@@ -8,43 +8,76 @@ from tabs.uncertainty_viewing import render_uncertainty_viewing_page
 
 
 def home():
-    # Info page
-    st.title("Welcome to the Wildlife Age-Sex Classification App")
-    st.write(
-        """This project helps classify wildlife based on age and sex using machine learning models.
-        This portal is designed to help annotate images of wildlife and compare the performance of
-        different trained models.
+    # Page header
+    st.title("🦌 WildlifeML")
+    st.caption("A Lightweight and Accessible Machine Learning Pipeline for Ecologists")
+
+    st.markdown("---")
+
+    st.header("Welcome to the WildlifeML App!")
+    st.markdown(
+        """
+**WildlifeML** is a lightweight interface for ecological image classification tasks.
+It's adaptable for many applications and based on an open framework described in our paper:
+
+> *Beyond Off-the-Shelf Models: A Lightweight and Accessible Machine Learning Pipeline for Ecologists Working with Image Data*
+
+[View the paper on Arxiv](https://arxiv.org/demo-link)
         """
     )
 
-    st.write("## App Sections")
+    st.markdown("---")
+    st.header("📋 Interface Sections")
+    st.markdown("Explore the main components:")
 
-    st.write("### 🏷️ Annotation Interface")
-    st.write("• Manually label wildlife images with age and sex classifications")
-    st.write("• Create custom annotation classes and labels for your dataset")
-    st.write("• Navigate through detected wildlife bounding boxes efficiently")
-    st.write("• Track annotation progress with visual indicators")
+    # Use columns to visually organize app features
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("🏷️ Annotation Interface")
+        st.markdown(
+            """
+- **Manually label images** with your own classes
+- **Navigate detected objects** efficiently
+            """
+        )
 
-    st.write("### 📊 Model Results")
-    st.write("• View comprehensive performance metrics for trained models")
-    st.write("• Analyze confusion matrices and stratified results")
-    st.write("• Compare model accuracy, precision, recall, and F1 scores")
-    st.write("• Review training specifications and class distributions")
+        st.subheader("❌ Error Viewing")
+        st.markdown(
+            """
+- **Examine misclassified images**
+- **See prediction errors with confidence scores**
+- **Find patterns in classification mistakes**
+            """
+        )
+    with col2:
+        st.subheader("📊 Model Results")
+        st.markdown(
+            """
+- **View interactive performance metrics**
+- **Compare accuracy, precision, recall, F1**
+- **Review training specs and class distributions**
+            """
+        )
 
-    st.write("### ❌ Error Viewing")
-    st.write("• Examine misclassified images to understand model weaknesses")
-    st.write("• Browse through prediction errors with confidence scores")
-    st.write("• Identify patterns in classification mistakes")
-    st.write("• Use insights to improve model training and data quality")
+        st.subheader("❓ Uncertainty Viewing")
+        st.markdown(
+            """
+- **Review images with uncertain predictions**
+- **Analyze confidence and threshold values**
+            """
+        )
 
-    st.write("### ❓ Uncertainty Viewing")
-    st.write("• Review images where the model is uncertain about predictions")
-    st.write("• Identify cases requiring manual verification or additional training data")
-    st.write("• Analyze confidence scores and uncertainty thresholds")
-
-    st.write("Navigate through the sidebar to access different features of the app.")
-    st.write(
-        "For more information, visit our [GitHub repository](https://github.com/slds-lmu/wildlife-age-sex)."
+    st.markdown("---")
+    st.header("🚀 Getting Started")
+    st.markdown(
+        """
+- **Use the sidebar menu** to navigate between annotation, results, error analysis, and uncertainties.
+- Adapt this framework for your own data by modifying config files and the pipeline in the linked repository as needed.
+        """
+    )
+    st.info(
+        "For more information, visit our [GitHub repository](https://github.com/slds-lmu/wildlife-age-sex).",
+        icon="🌐",
     )
 
 
