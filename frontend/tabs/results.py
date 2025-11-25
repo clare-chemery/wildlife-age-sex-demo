@@ -1,322 +1,30 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-import numpy as np
 import json
 import logging
-from pathlib import Path
-from sklearn.metrics import ConfusionMatrixDisplay
-import matplotlib.pyplot as plt
 from datetime import datetime
+from pathlib import Path
+
+import plotly.express as px
+import streamlit as st
+
+from .results_metrics import (
+    calculate_averaged_metrics,
+    display_metrics,
+    display_uncertainty_metrics,
+    plot_confusion_matrix,
+    summarize_overall_runs,
+)
 
 
-def plot_confusion_matrix(cm_dict, labels=None):
-    """Create a confusion matrix plot using scikit-learn's ConfusionMatrixDisplay.
-
-    Args:
-        cm_dict: Dictionary with keys in format "true_label_predicted_label"
-        labels: Optional list of labels in correct order. If None, extracted from cm_dict.
-    """
-    # Extract unique labels from dictionary keys
-    if labels is None:
-        labels = sorted(set(label for key in cm_dict.keys() for label in key.split("_")))
-
-    n = len(labels)
-    cm = np.zeros((n, n), dtype=int)
-
-    # Fill confusion matrix using label indices
-    label_to_idx = {label: idx for idx, label in enumerate(labels)}
-    for key, value in cm_dict.items():
-        try:
-            true_label, pred_label = key.split("_")
-            i, j = label_to_idx[true_label], label_to_idx[pred_label]
-            cm[i, j] = value
-        except Exception as e:
-            st.write(f"Error processing key {key}: {e}")
-            continue
-
-    # Create the confusion matrix display
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
-
-    # Create figure and plot
-    fig, ax = plt.subplots(figsize=(10, 8))
-    disp.plot(
-        ax=ax,
-        cmap="Blues",
-        values_format="d",  # Show integer values
-        colorbar=True,
+def _labels_from_section(section_data, fallback_labels=None):
+    """Return label order based on class distributions."""
+    if not section_data:
+        return fallback_labels
+    distribution = section_data.get("aggregated_class_distribution") or section_data.get(
+        "class_distribution"
     )
-
-    # Customize the plot
-    plt.title("Confusion Matrix", pad=20)
-    plt.xlabel("Predicted Label")
-    plt.ylabel("True Label")
-
-    # Rotate x-axis labels for better readability
-    plt.xticks(rotation=45, ha="right")
-
-    # Adjust layout to prevent label cutoff
-    plt.tight_layout()
-    return fig
-
-
-def plot_stratified_results(results_dict, metric="accuracy"):
-    """Create an interactive bar plot of stratified results."""
-    # Extract metrics for each stratum
-    strata = []
-    metrics = []
-    for stratum, metrics_dict in results_dict.items():
-        if stratum != "overall":
-            strata.append(stratum)
-            metrics.append(metrics_dict[metric])
-
-    fig = px.bar(
-        x=strata,
-        y=metrics,
-        title=f"Stratified {metric.capitalize()}",
-        labels={"x": "Category", "y": metric.capitalize()},
-    )
-    fig.update_layout(width=800, height=400)
-    return fig
-
-
-def display_metrics(metrics_dict, title="Metrics", show_std=False):
-    """Display metrics in a row of columns.
-
-    Args:
-        metrics_dict: Dictionary containing metric values
-        title: Title for the metrics section
-        show_std: If True, display as mean ± std format. If False, display as percentage.
-    """
-    st.subheader(title)
-    col1, col2, col3, col4 = st.columns(4)
-
-    if show_std:
-        # Display averaged metrics with standard deviation on multiple lines
-        with col1:
-            acc_data = metrics_dict.get("accuracy", {})
-            if isinstance(acc_data, dict) and "mean" in acc_data:
-                st.markdown(
-                    f"""
-                <div style="text-align: center; padding: 10px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f8f9fa;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Accuracy</div>
-                    <div style="font-size: 18px; font-weight: bold; color: #262730;">{acc_data["mean"]:.2%}</div>
-                    <div style="font-size: 12px; color: #666;">(±{acc_data["std"]:.2%})</div>
-                </div>
-                """,
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.metric("Accuracy", f"{metrics_dict.get('accuracy', 0):.2%}")
-
-        with col2:
-            prec_data = metrics_dict.get("precision", {})
-            if isinstance(prec_data, dict) and "mean" in prec_data:
-                st.markdown(
-                    f"""
-                <div style="text-align: center; padding: 10px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f8f9fa;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Precision</div>
-                    <div style="font-size: 18px; font-weight: bold; color: #262730;">{prec_data["mean"]:.2%}</div>
-                    <div style="font-size: 12px; color: #666;">(±{prec_data["std"]:.2%})</div>
-                </div>
-                """,
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.metric("Precision", f"{metrics_dict.get('precision', 0):.2%}")
-
-        with col3:
-            rec_data = metrics_dict.get("recall", {})
-            if isinstance(rec_data, dict) and "mean" in rec_data:
-                st.markdown(
-                    f"""
-                <div style="text-align: center; padding: 10px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f8f9fa;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Recall</div>
-                    <div style="font-size: 18px; font-weight: bold; color: #262730;">{rec_data["mean"]:.2%}</div>
-                    <div style="font-size: 12px; color: #666;">(±{rec_data["std"]:.2%})</div>
-                </div>
-                """,
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.metric("Recall", f"{metrics_dict.get('recall', 0):.2%}")
-
-        with col4:
-            f1_data = metrics_dict.get("f1-score", {})
-            if isinstance(f1_data, dict) and "mean" in f1_data:
-                st.markdown(
-                    f"""
-                <div style="text-align: center; padding: 10px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f8f9fa;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">F1 Score</div>
-                    <div style="font-size: 18px; font-weight: bold; color: #262730;">{f1_data["mean"]:.2%}</div>
-                    <div style="font-size: 12px; color: #666;">(±{f1_data["std"]:.2%})</div>
-                </div>
-                """,
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.metric("F1 Score", f"{metrics_dict.get('f1-score', 0):.2%}")
-        st.write("\n")  # Add an empty line for spacing in the app
-    else:
-        # Display individual run metrics as percentages
-        with col1:
-            st.metric("Accuracy", f"{metrics_dict.get('accuracy', 0):.2%}")
-        with col2:
-            st.metric("Precision", f"{metrics_dict.get('precision', 0):.2%}")
-        with col3:
-            st.metric("Recall", f"{metrics_dict.get('recall', 0):.2%}")
-        with col4:
-            st.metric("F1 Score", f"{metrics_dict.get('f1-score', 0):.2%}")
-
-
-def display_uncertainty_metrics(metrics_dict, title="Uncertainty Metrics", show_std=False):
-    """Display uncertainty-related metrics.
-
-    Args:
-        metrics_dict: Dictionary containing uncertainty metric values
-        title: Title for the uncertainty metrics section
-        show_std: If True, display as mean ± std format. If False, display as single values.
-    """
-    st.subheader(title)
-
-    # Check which metrics are available and create appropriate columns
-    available_metrics = []
-
-    if "uncertainty_threshold" in metrics_dict:
-        available_metrics.append(
-            ("Uncertainty Threshold", f"{metrics_dict['uncertainty_threshold']:.2f}")
-        )
-
-    if "n_certain_images" in metrics_dict:
-        if show_std and isinstance(metrics_dict["n_certain_images"], dict):
-            certain_data = metrics_dict["n_certain_images"]
-            available_metrics.append(
-                ("Certain Images", f"{certain_data['mean']:.0f}", f"{certain_data['std']:.0f}")
-            )
-        else:
-            available_metrics.append(("Certain Images", metrics_dict["n_certain_images"]))
-
-    if "n_uncertain_images" in metrics_dict:
-        if show_std and isinstance(metrics_dict["n_uncertain_images"], dict):
-            uncertain_data = metrics_dict["n_uncertain_images"]
-            available_metrics.append(
-                (
-                    "Uncertain Images",
-                    f"{uncertain_data['mean']:.0f}",
-                    f"{uncertain_data['std']:.0f}",
-                )
-            )
-        else:
-            available_metrics.append(("Uncertain Images", metrics_dict["n_uncertain_images"]))
-
-    if "avg_confidence" in metrics_dict:
-        if show_std and isinstance(metrics_dict["avg_confidence"], dict):
-            conf_data = metrics_dict["avg_confidence"]
-            available_metrics.append(
-                ("Avg Confidence", f"{conf_data['mean']:.3f}", f"{conf_data['std']:.3f}")
-            )
-        else:
-            available_metrics.append(("Avg Confidence", f"{metrics_dict['avg_confidence']:.3f}"))
-    if not available_metrics:
-        st.write("No uncertainty metrics available for this result.")
-        return
-
-    # Create columns based on available metrics
-    cols = st.columns(len(available_metrics))
-    for i, metric_data in enumerate(available_metrics):
-        with cols[i]:
-            if len(metric_data) == 3:  # Has std deviation as separate value
-                label, value, std = metric_data
-                # Use HTML to display on multiple lines
-                st.markdown(
-                    f"""
-                <div style="text-align: center; padding: 10px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f8f9fa;">
-                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">{label}</div>
-                    <div style="font-size: 18px; font-weight: bold; color: #262730;">{value}</div>
-                    <div style="font-size: 12px; color: #666;">(±{std})</div>
-                </div>
-                """,
-                    unsafe_allow_html=True,
-                )
-            else:  # Single value (std already included in value string)
-                label, value = metric_data
-                st.metric(label, value)
-    st.write("\n")  # Add an empty line for spacing in the app
-
-
-def calculate_averaged_metrics(results):
-    """Calculate averaged metrics and standard deviations across all evaluation runs.
-
-    Args:
-        results: List of (timestamp, result_dict) tuples from load_model_results
-
-    Returns:
-        Dictionary with averaged metrics and standard deviations
-    """
-    if not results:
-        return None
-
-    # Collect all metrics across runs
-    all_metrics = {
-        "overall": {
-            "accuracy": [],
-            "precision": [],
-            "recall": [],
-            "f1-score": [],
-            "n_test_observations": [],
-            "excluded_uncertain_images": [],
-            "n_uncertain_images": [],
-            "avg_confidence": [],
-        }
-    }
-
-    # Collect stratified metrics
-    stratified_keys = set()
-    for _, result in results:
-        for key in result.keys():
-            if key != "overall":
-                stratified_keys.add(key)
-
-    # Initialize stratified metrics collection
-    for key in stratified_keys:
-        all_metrics[key] = {
-            "accuracy": [],
-            "precision": [],
-            "recall": [],
-            "f1-score": [],
-            "n_test_observations": [],
-            "excluded_uncertain_images": [],
-            "n_uncertain_images": [],
-            "avg_confidence": [],
-        }
-
-    # Collect metrics from each run
-    for _, result in results:
-        # Overall metrics
-        if "overall" in result:
-            for metric in all_metrics["overall"].keys():
-                if metric in result["overall"]:
-                    all_metrics["overall"][metric].append(result["overall"][metric])
-
-        # Stratified metrics
-        for key in stratified_keys:
-            if key in result:
-                for metric in all_metrics[key].keys():
-                    if metric in result[key]:
-                        all_metrics[key][metric].append(result[key][metric])
-
-    # Calculate averages and standard deviations
-    averaged_metrics = {}
-    for section, metrics in all_metrics.items():
-        averaged_metrics[section] = {}
-        for metric, values in metrics.items():
-            if values:  # Only calculate if we have values
-                avg = np.mean(values)
-                std = np.std(values, ddof=1) if len(values) > 1 else 0.0
-                averaged_metrics[section][metric] = {"mean": avg, "std": std, "count": len(values)}
-
-    return averaged_metrics
+    if distribution:
+        return list(distribution.keys())
+    return fallback_labels
 
 
 def get_model_average_accuracy(model_name):
@@ -418,39 +126,101 @@ def render_averaged_results(results, model):
 
     # Display summary information
     st.write("#### Summary")
-    n_runs = len(results)
-    st.write(f"Results averaged across **{n_runs}** evaluation runs")
+    summary_stats = summarize_overall_runs(results)
+    st.write(f"Results averaged across **{summary_stats['n_runs']}** evaluation runs")
 
     # Display averaged overall metrics
     if "overall" in averaged_metrics:
         overall_data = averaged_metrics["overall"]
 
-        # Class distribution info (use first run as representative)
-        first_result = results[0][1]["overall"]
-        st.write("#### Class Distribution")
-        st.write(f"Test set contained {first_result['n_test_observations']} observations.")
-        st.write(f"Excluded uncertain images: {first_result['excluded_uncertain_images']}")
-        st.info(
-            "💡 Traning class distribution varies. Use 'Individual Runs' view to see the class distribution for each run."
-        )
+        st.write("#### Dataset Overview")
 
-        # Display averaged uncertainty metrics
-        display_uncertainty_metrics(overall_data, "Uncertainty Analysis", show_std=True)
+        total_test = summary_stats["total_n_test_observations"]
+        total_uncertain = summary_stats["total_n_uncertain_images"]
+        total_images = summary_stats["total_images_reviewed"]
 
-        # Display averaged performance metrics
-        display_metrics(overall_data, "Overall Performance", show_std=True)
-        # Note about confusion matrix
-        st.info(
-            "💡 **Note:** Confusion matrices are not averaged. Use 'Individual Runs' view to see confusion matrices for each evaluation run."
-        )
+        overview_lines = [
+            f"- **{summary_stats['n_runs']}** evaluation runs with identical specs.",
+            (
+                f"- Ran **{total_images:,}** test predictions "
+                f"({total_test:,} used for scoring + {total_uncertain:,} uncertain excluded)."
+            ),
+        ]
+
+        per_run = summary_stats["per_run_n_test_consistent"]
+        if per_run is not None:
+            overview_lines.append(f"- **{per_run:,}** test observations per run.")
+
+        per_run_unc = summary_stats["per_run_n_uncertain_consistent"]
+        if per_run_unc is not None and total_uncertain:
+            overview_lines.append(f"- **{per_run_unc:,}** uncertain images flagged per run.")
+
+        if summary_stats["weighted_avg_confidence"] is not None:
+            overview_lines.append(
+                f"- Average prediction confidence across certain predictions: "
+                f"**{summary_stats['weighted_avg_confidence']:.3f}**."
+            )
+        if overall_data.get("uncertainty_threshold") is not None:
+            overview_lines.append(
+                "- Uncertainty threshold applied before scoring: "
+                f"**{float(overall_data['uncertainty_threshold']):.2f}**."
+            )
+
+        if summary_stats["excluded_uncertain_consistent"]:
+            if summary_stats["excluded_uncertain_value"]:
+                overview_lines.append("- Uncertain images were excluded before scoring.")
+            else:
+                overview_lines.append("- Uncertain images remained in the scored dataset.")
+        else:
+            overview_lines.append("- Handling of uncertain images varied between runs.")
+
+        st.markdown("\n".join(overview_lines))
+
+        with st.expander("Class Distribution & Confusion Matrix"):
+            aggregated_distribution = overall_data.get("aggregated_class_distribution")
+            if aggregated_distribution:
+                total_count = sum(aggregated_distribution.values())
+                names = ["Aggregated Test Data"]
+                parents = [""]
+                values = [total_count]
+                for label, count in sorted(aggregated_distribution.items()):
+                    names.append(label)
+                    parents.append("Aggregated Test Data")
+                    values.append(count)
+                fig = px.treemap(
+                    names=names,
+                    parents=parents,
+                    values=values,
+                    title="Aggregated Test Data Class Distribution",
+                    branchvalues="total",
+                )
+                fig.update_layout(width=800, height=400)
+                st.plotly_chart(fig, key="aggregated_test_class_distribution")
+
+            aggregated_cm = overall_data.get("aggregated_confusion_matrix")
+            if aggregated_cm:
+                aggregated_labels = _labels_from_section(overall_data)
+                st.pyplot(
+                    plot_confusion_matrix(
+                        aggregated_cm,
+                        labels=aggregated_labels,
+                        title="Aggregated Confusion Matrix",
+                    )
+                )
+
+        # Display aggregated uncertainty metrics
+        display_uncertainty_metrics(overall_data, "Uncertainty Analysis")
+
+        # Display aggregated performance metrics
+        display_metrics(overall_data, "Overall Performance")
 
         # Display stratified results (averaged)
         st.subheader("Stratified Results")
         for stratum, metrics in averaged_metrics.items():
             if stratum != "overall":
                 st.write(f"### {stratum}")
-                display_metrics(metrics, show_std=True)
-                display_uncertainty_metrics(metrics, "Stratum Uncertainty Analysis", show_std=True)
+                display_metrics(metrics)
+                display_uncertainty_metrics(metrics, "Stratum Uncertainty Analysis")
 
 
 def render_individual_results(results):
@@ -466,7 +236,8 @@ def render_individual_results(results):
             )
             st.write(f"Number of uncertain images: {result['overall']['n_uncertain_images']}")
             st.write(
-                f"Avg confidence of included images: {result['overall']['avg_confidence']:.3f}"
+                "Avg prediction confidence of included images: "
+                f"{result['overall']['avg_confidence']:.3f}"
             )
 
             class_dist = result["overall"]["class_distribution"]
@@ -487,7 +258,14 @@ def render_individual_results(results):
 
             # Display overall confusion matrix
             st.subheader("Overall Confusion Matrix")
-            st.pyplot(plot_confusion_matrix(result["overall"]["confusion_matrix"]))
+            overall_labels = _labels_from_section(result["overall"])
+            st.pyplot(
+                plot_confusion_matrix(
+                    result["overall"]["confusion_matrix"],
+                    labels=overall_labels,
+                    title="Overall Confusion Matrix",
+                )
+            )
 
             # Display stratified results
             st.subheader("Stratified Results")
@@ -497,7 +275,14 @@ def render_individual_results(results):
                     display_metrics(metrics)
                     # Display uncertainty metrics for stratified results
                     display_uncertainty_metrics(metrics, "Stratum Uncertainty Analysis")
-                    st.pyplot(plot_confusion_matrix(metrics["confusion_matrix"]))
+                    stratum_labels = _labels_from_section(metrics, fallback_labels=overall_labels)
+                    st.pyplot(
+                        plot_confusion_matrix(
+                            metrics["confusion_matrix"],
+                            labels=stratum_labels,
+                            title=f"{stratum} Confusion Matrix",
+                        )
+                    )
 
 
 def render_training_specs(model):
