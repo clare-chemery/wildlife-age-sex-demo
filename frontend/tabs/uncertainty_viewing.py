@@ -27,6 +27,10 @@ def render_uncertainty_viewing_page():
             experiment_options.append(f"{name} (Avg Accuracy: {accuracy:.2%})")
         experiment_names.append(name)
 
+    if not experiment_options:
+        st.info("No experiments found in the models directory.")
+        return
+
     selected_option = st.selectbox("Select experiment", options=experiment_options)
     experiment_name = experiment_names[experiment_options.index(selected_option)]
 
