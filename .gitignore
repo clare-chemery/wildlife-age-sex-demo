@@ -194,8 +194,8 @@ data/demo/train/
 !data/demo/enriched_data.parquet
 !data/demo/preprocessed_demo_data.parquet
 # keep error tables from evaluation
-models/**/*.jpg
-!models/demo_model/**/*.jpg
-!models/**/*.parquet
+models/*
+!models/demo_model/
+!models/demo_model/**/*.parquet
 analyses/*
 
