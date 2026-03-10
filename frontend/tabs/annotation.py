@@ -53,6 +53,7 @@ def render_config_picker():
             st.session_state.image_dir = image_dir
             annotations_path = Path("data") / image_dir / "annotations.json"
             st.session_state.annotations_path = annotations_path
+            st.session_state[f"annotations_{annotations_path}"] = []
             st.rerun()
 
         config_df = pd.DataFrame([{"class_name": "ex_class", "class_labels": "label_1, label_2"}])
@@ -86,6 +87,7 @@ def render_config_picker():
             st.session_state.image_dir = image_dir
             annotations_path = Path("data") / image_dir / "annotations.json"
             st.session_state.annotations_path = annotations_path
+            st.session_state[f"annotations_{annotations_path}"] = []
             st.rerun()
 
 
@@ -241,29 +243,16 @@ def load_bbox_results(image_dir: str):
 
 
 def save_annotation_to_json(annotations_path: str, bbox_annotations: dict):
-    """Save annotation to JSON file."""
-    # Load existing annotations or create new list
-    try:
-        with open(annotations_path, "r") as f:
-            annotations = json.load(f)
-    except FileNotFoundError:
-        annotations = []
-
-    # Add new annotation with source file tracking
-    annotations.append(bbox_annotations)
-
-    # Save back to file with proper formatting
-    with open(annotations_path, "w") as f:
-        json.dump(annotations, f, indent=2)
+    """Save annotation to session state."""
+    key = f"annotations_{annotations_path}"
+    if key not in st.session_state:
+        st.session_state[key] = []
+    st.session_state[key].append(bbox_annotations)
 
 
 def get_bboxes_to_code(annotations_path: str, bboxes: list):
-    try:
-        with open(annotations_path, "r") as f:
-            annotations = json.load(f)
-        existing_annotations = [ann["image_id"] for ann in annotations]
-    except FileNotFoundError:
-        existing_annotations = []
+    annotations = st.session_state.get(f"annotations_{annotations_path}", [])
+    existing_annotations = [ann["image_id"] for ann in annotations]
 
     if not bboxes:
         st.warning("No bounding boxes found.")
@@ -340,9 +329,4 @@ def exit_annotation():
 
 def get_completed_annotation_count(annotations_path: str):
     """Get the number of completed annotations."""
-    try:
-        with open(annotations_path, "r") as f:
-            annotations = json.load(f)
-        return len(annotations)
-    except FileNotFoundError:
-        return 0
+    return len(st.session_state.get(f"annotations_{annotations_path}", []))

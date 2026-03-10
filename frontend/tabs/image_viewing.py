@@ -49,8 +49,8 @@ def get_experiments():
 
     # Walk through all subdirectories in models/
     for root, dirs, files in os.walk(models_dir):
-        # Check if any .pt files exist in current directory
-        if any(file.endswith(".pt") for file in files):
+        # Check if any eval result files exist in current directory
+        if any(file.endswith("__eval_results.json") for file in files):
             # Get relative path from models/ directory
             relative_path = Path(root).relative_to(models_dir)
             experiment_name = str(relative_path)
