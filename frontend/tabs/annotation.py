@@ -77,10 +77,8 @@ def render_config_picker():
                 lambda x: [label.strip() for label in x.split(",")]
             )
 
-            # Convert (back) to JSON format and save
+            # Convert (back) to JSON format
             annotation_config = {"classes": config_df.to_dict("records")}
-            with open(Path("data") / image_dir / "annotation_config.json", "w") as f:
-                json.dump(annotation_config, f, indent=2)
 
             # Store config in session_state before rerun
             st.session_state.annotation_config = annotation_config
